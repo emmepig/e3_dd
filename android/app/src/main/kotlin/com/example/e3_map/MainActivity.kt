@@ -1,4 +1,4 @@
-package com.example.e3_map
+package it.emmepig.e3_map
 
 import io.flutter.embedding.android.FlutterActivity
 
