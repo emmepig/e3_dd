@@ -142,7 +142,26 @@ class _MappaPageState extends State<MappaPage> {
 
       body: FlutterMap(
         mapController: _mapController,
-        options: MapOptions(initialCenter: center, initialZoom: 16),
+        options: MapOptions(
+          initialCenter: center,
+          initialZoom: 16,
+          onTap: (tapPosition, point) {
+            setState(() {
+              _markers.add(
+                Marker(
+                  point: point,
+                  width: 40,
+                  height: 40,
+                  child: const Icon(
+                    Icons.location_pin,
+                    color: Colors.red,
+                    size: 40,
+                  ),
+                ),
+              );
+            });
+          },
+        ),
         children: [
           TileLayer(
             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -180,6 +199,9 @@ class _MappaPageState extends State<MappaPage> {
                 ),
               ],
             ),
+
+          // marker aggiunti con +
+          MarkerLayer(markers: _markers),
         ],
       ),
 
