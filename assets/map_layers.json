@@ -1,0 +1,46 @@
+[
+  {
+    "name": "OSM Standard",
+    "id": "standard",
+    "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "subdomains": ["a", "b", "c"]
+  },
+  {
+    "name": "OSM Humanitarian",
+    "id": "humanitarian",
+    "url": "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+    "subdomains": ["a", "b", "c"]
+  },
+  {
+    "name": "OpenTopoMap",
+    "id": "opentopo",
+    "url": "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+    "subdomains": ["a", "b", "c"]
+  },
+  {
+    "name": "Stamen Terrain",
+    "id": "terrain",
+    "url": "https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg",
+    "subdomains": ["a", "b", "c"]
+  },
+  {
+    "name": "Stamen Toner",
+    "id": "toner",
+    "url": "https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+    "subdomains": ["a", "b", "c"]
+  },
+  {
+    "name": "Stamen Watercolor",
+    "id": "watercolor",
+    "url": "https://stamen-tiles.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg",
+    "subdomains": ["a", "b", "c"]
+  },
+  {
+    "name": "Thunderforest Cycle",
+    "id": "cycle",
+    "url": "https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=6d91e1651666473da3e58b9c9a311c96",
+    "subdomains": ["a", "b", "c"]
+  }
+
+
+]
