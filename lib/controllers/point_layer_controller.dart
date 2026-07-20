@@ -1,78 +1,113 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../models/point_layer.dart';
 import '../models/punto_info.dart';
-import '../services/point_layer_storage.dart';
+import '../models/point_layer.dart';
 
-class PointLayerController extends ChangeNotifier {
-  List<PointLayer> layers = [];
+class PointLayerController {
+  // LAYER LIST
+  final List<PointLayer> layers = [
+    PointLayer(
+      id: "default",
+      name: "Default",
+      color: Colors.red,
+      icon: Icons.location_pin,
+      visible: true,
+    ),
+  ];
+
+  // ACTIVE LAYER
   String activeLayerId = "default";
 
-  Future<void> load() async {
-    layers = await PointLayerStorage.load();
+  // MARKERS PER LAYER
+  final Map<String, List<Map<String, dynamic>>> markers = {"default": []};
 
-    if (layers.isEmpty) {
-      layers = [PointLayer(id: "default", name: "Default")];
-    }
+  // VISIBILITY PER LAYER
+  final Map<String, bool> visibility = {"default": true};
 
-    notifyListeners();
-  }
-
-  Future<void> save() async {
-    await PointLayerStorage.save(layers);
-  }
-
-  PointLayer get activeLayer => layers.firstWhere((l) => l.id == activeLayerId);
-
+  // AGGIUNTA LAYER
   void addLayer(String name, Color color, IconData icon) {
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+
     layers.add(
-      PointLayer(
-        id: name.toLowerCase().replaceAll(" ", "_"),
-        name: name,
-        color: color,
-        icon: icon,
-      ),
+      PointLayer(id: id, name: name, color: color, icon: icon, visible: true),
     );
-    save();
-    notifyListeners();
+
+    markers[id] = [];
+    visibility[id] = true;
+
+    activeLayerId = id;
   }
 
+  // ELIMINAZIONE LAYER
+  void removeLayer(String id) {
+    if (layers.length <= 1) return;
+
+    layers.removeWhere((l) => l.id == id);
+    markers.remove(id);
+    visibility.remove(id);
+
+    if (activeLayerId == id) {
+      activeLayerId = layers.first.id;
+    }
+  }
+
+  // CAMBIO LAYER ATTIVO
   void setActiveLayer(String id) {
     activeLayerId = id;
-    notifyListeners();
   }
 
-  void toggleVisibility(String id, bool visible) {
-    layers.firstWhere((l) => l.id == id).visible = visible;
-    save();
-    notifyListeners();
+  // VISIBILITÀ
+  void toggleVisibility(String id, bool v) {
+    visibility[id] = v;
+    final layer = layers.firstWhere((l) => l.id == id);
+    layer.visible = v;
   }
 
-  void addPoint(LatLng point, PuntoInfo info) {
-    activeLayer.points.add(PointEntry(point: point, info: info));
-    save();
-    notifyListeners();
+  // AGGIUNTA PUNTO
+  void addPoint(LatLng point, PuntoInfo info, void Function(LatLng) onTapEdit) {
+    final layer = layers.firstWhere((l) => l.id == activeLayerId);
+
+    markers[activeLayerId]!.add({
+      "marker": Marker(
+        point: point,
+        width: 40,
+        height: 40,
+        child: GestureDetector(
+          onTap: () => onTapEdit(point),
+          child: Icon(layer.icon, color: layer.color, size: 40),
+        ),
+      ),
+      "info": info,
+    });
   }
 
+  // MODIFICA PUNTO
   void updatePoint(LatLng point, PuntoInfo info) {
-    final layer = activeLayer;
-    final entry = layer.points.firstWhere((p) => p.point == point);
-    entry.info = info;
-    save();
-    notifyListeners();
+    final result = findPoint(point);
+    if (result == null) return;
+
+    final item = result["item"];
+    item["info"] = info;
   }
 
-  void movePoint(LatLng oldPoint, LatLng newPoint) {
-    final layer = activeLayer;
-    final entry = layer.points.firstWhere((p) => p.point == oldPoint);
-    entry.point = newPoint;
-    save();
-    notifyListeners();
-  }
-
+  // ELIMINA PUNTO
   void deletePoint(LatLng point) {
-    activeLayer.points.removeWhere((p) => p.point == point);
-    save();
-    notifyListeners();
+    final result = findPoint(point);
+    if (result == null) return;
+
+    final layerId = result["layerId"];
+    markers[layerId]!.removeWhere((m) => m["marker"].point == point);
+  }
+
+  // CERCA PUNTO IN TUTTI I LAYER
+  Map<String, dynamic>? findPoint(LatLng point) {
+    for (final entry in markers.entries) {
+      final match = entry.value.where((m) => m["marker"].point == point);
+      if (match.isNotEmpty) {
+        return {"layerId": entry.key, "item": match.first};
+      }
+    }
+    return null;
   }
 }

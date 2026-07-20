@@ -9,6 +9,8 @@ import 'models/map_layer.dart';
 import 'models/punto_info.dart';
 import 'services/layer_loader.dart';
 import 'widgets/punto_dialog.dart';
+import 'widgets/layer_manager.dart';
+import 'controllers/point_layer_controller.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,15 +38,7 @@ class MappaPage extends StatefulWidget {
 
 class _MappaPageState extends State<MappaPage> {
   final MapController _mapController = MapController();
-
-  // ============================================================
-  // LAYER DEI PUNTI
-  // ============================================================
-  String _activePointLayer = "default";
-
-  Map<String, bool> _layerVisibility = {"default": true};
-
-  Map<String, List<Map<String, dynamic>>> _layerMarkers = {"default": []};
+  final PointLayerController pointLayerController = PointLayerController();
 
   // ============================================================
   // LAYER MAPPA (OSM, satellite, ecc.)
@@ -153,29 +147,40 @@ class _MappaPageState extends State<MappaPage> {
           setState(() {
             if (info == null) {
               // CREAZIONE
-              _layerMarkers[_activePointLayer]!.add({
-                "marker": Marker(
-                  point: point,
-                  width: 40,
-                  height: 40,
-                  child: GestureDetector(
-                    onTap: () => _editMarker(point),
-                    child: const Icon(
-                      Icons.location_pin,
-                      color: Colors.red,
-                      size: 40,
-                    ),
-                  ),
-                ),
-                "info": newInfo,
-              });
+              pointLayerController.addPoint(point, newInfo, _editMarker);
             } else {
               // MODIFICA
-              final layer = _layerMarkers[_activePointLayer]!;
-              final item = layer.firstWhere((m) => m["marker"].point == point);
-              item["info"] = newInfo;
+              pointLayerController.updatePoint(point, newInfo);
             }
           });
+        },
+        // elimina punto
+        onDelete: () async {
+          final bool? conferma = await showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text("Conferma eliminazione"),
+                content: const Text("Vuoi davvero eliminare questo punto?"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text("Annulla"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text("Elimina"),
+                  ),
+                ],
+              );
+            },
+          );
+
+          if (conferma == true) {
+            setState(() {
+              pointLayerController.deletePoint(point);
+            });
+          }
         },
       ),
     );
@@ -185,21 +190,16 @@ class _MappaPageState extends State<MappaPage> {
   // MODIFICA PUNTO (CERCA IN TUTTI I LAYER)
   // ------------------------------------------------------------
   void _editMarker(LatLng point) {
-    for (final entry in _layerMarkers.entries) {
-      final layerId = entry.key;
-      final markers = entry.value;
+    final result = pointLayerController.findPoint(point);
 
-      final match = markers.where((m) => m["marker"].point == point);
+    if (result != null) {
+      final layerId = result["layerId"];
+      final item = result["item"];
+      final info = item["info"] as PuntoInfo;
 
-      if (match.isNotEmpty) {
-        final item = match.first;
-        final info = item["info"] as PuntoInfo;
+      setState(() => pointLayerController.activeLayerId = layerId);
 
-        setState(() => _activePointLayer = layerId);
-
-        _openPuntoDialog(point, info);
-        return;
-      }
+      _openPuntoDialog(point, info);
     }
   }
 
@@ -234,7 +234,14 @@ class _MappaPageState extends State<MappaPage> {
               title: const Text('Gestione layer punti'),
               onTap: () {
                 Navigator.pop(context);
-                _openLayerManager();
+
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) {
+                    return LayerManager(controller: pointLayerController);
+                  },
+                );
               },
             ),
           ],
@@ -296,8 +303,11 @@ class _MappaPageState extends State<MappaPage> {
 
                 // MARKER UTENTE PER LAYER
                 MarkerLayer(
-                  markers: _layerMarkers.entries
-                      .where((entry) => _layerVisibility[entry.key] == true)
+                  markers: pointLayerController.markers.entries
+                      .where(
+                        (entry) =>
+                            pointLayerController.visibility[entry.key] == true,
+                      )
                       .expand(
                         (entry) =>
                             entry.value.map((m) => m["marker"] as Marker),
@@ -349,118 +359,6 @@ class _MappaPageState extends State<MappaPage> {
               );
             }).toList(),
           ),
-        );
-      },
-    );
-  }
-
-  // ------------------------------------------------------------
-  // MENU LAYER PUNTI
-  // ------------------------------------------------------------
-  void _openLayerManager() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.add),
-                  title: const Text("Aggiungi layer"),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _createNewLayer();
-                  },
-                ),
-                const Divider(),
-                Expanded(
-                  child: ListView(
-                    children: _layerMarkers.keys.map((layerId) {
-                      final bool isActive = layerId == _activePointLayer;
-
-                      return ListTile(
-                        title: Row(
-                          children: [
-                            Text(layerId),
-                            const SizedBox(width: 8),
-                            if (isActive)
-                              const Icon(
-                                Icons.check_circle,
-                                color: Colors.green,
-                              ),
-                          ],
-                        ),
-
-                        // VISIBILITÀ
-                        leading: isActive
-                            ? const Icon(Icons.visibility, color: Colors.grey)
-                            : Checkbox(
-                                value: _layerVisibility[layerId],
-                                onChanged: (v) {
-                                  setState(
-                                    () => _layerVisibility[layerId] = v!,
-                                  );
-                                  setModalState(() {});
-                                },
-                              ),
-
-                        // EDIT SOLO PER LAYER NON ATTIVO
-                        trailing: isActive
-                            ? null
-                            : IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () {
-                                  setState(() => _activePointLayer = layerId);
-                                  Navigator.pop(context);
-                                },
-                              ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // ------------------------------------------------------------
-  // CREAZIONE NUOVO LAYER PUNTI
-  // ------------------------------------------------------------
-  void _createNewLayer() {
-    TextEditingController controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Nuovo layer punti"),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(labelText: "Nome layer"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Annulla"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final name = controller.text.trim();
-                if (name.isNotEmpty) {
-                  setState(() {
-                    _layerMarkers[name] = [];
-                    _layerVisibility[name] = true;
-                  });
-                }
-                Navigator.pop(context);
-              },
-              child: const Text("Crea"),
-            ),
-          ],
         );
       },
     );

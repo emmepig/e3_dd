@@ -8,76 +8,105 @@ class LayerManager extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StatefulBuilder(
-      builder: (context, setModalState) {
-        return Column(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text("Aggiungi layer"),
-              onTap: () {
-                Navigator.pop(context);
-                _createLayerDialog(context);
-              },
-            ),
-            const Divider(),
-            Expanded(
-              child: ListView(
-                children: controller.layers.map((layer) {
-                  final isActive = layer.id == controller.activeLayerId;
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) {
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.add),
+                    title: const Text("Aggiungi layer"),
+                    onTap: () => _createLayerDialog(context, setModalState),
+                  ),
 
-                  return ListTile(
-                    title: Row(
-                      children: [
-                        Icon(layer.icon, color: layer.color),
-                        const SizedBox(width: 8),
-                        Text(layer.name),
-                        if (isActive)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8),
-                            child: Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                            ),
+                  const Divider(),
+
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      children: controller.layers.map((layer) {
+                        final isActive = layer.id == controller.activeLayerId;
+
+                        return ListTile(
+                          title: Row(
+                            children: [
+                              Icon(layer.icon, color: layer.color),
+                              const SizedBox(width: 8),
+                              Text(layer.name),
+                              if (isActive)
+                                const Padding(
+                                  padding: EdgeInsets.only(left: 8),
+                                  child: Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                            ],
                           ),
-                      ],
-                    ),
-                    leading: isActive
-                        ? const Icon(Icons.visibility, color: Colors.grey)
-                        : Checkbox(
-                            value: layer.visible,
+
+                          leading: Checkbox(
+                            value: controller.visibility[layer.id],
                             onChanged: (v) {
                               controller.toggleVisibility(layer.id, v!);
                               setModalState(() {});
                             },
                           ),
-                    trailing: isActive
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed: () {
-                              controller.setActiveLayer(layer.id);
-                              Navigator.pop(context);
-                            },
+
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () {
+                                  controller.setActiveLayer(layer.id);
+                                  setModalState(() {});
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => _confirmDeleteLayer(
+                                  context,
+                                  layer.id,
+                                  setModalState,
+                                ),
+                              ),
+                            ],
                           ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         );
       },
     );
   }
 
-  void _createLayerDialog(BuildContext context) {
+  void _createLayerDialog(BuildContext context, Function setModalState) {
     final nameCtrl = TextEditingController();
     Color selectedColor = Colors.red;
     IconData selectedIcon = Icons.location_pin;
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text("Nuovo layer"),
           content: Column(
@@ -87,42 +116,92 @@ class LayerManager extends StatelessWidget {
                 controller: nameCtrl,
                 decoration: const InputDecoration(labelText: "Nome layer"),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Text("Colore: "),
-                  IconButton(
-                    icon: Icon(Icons.circle, color: selectedColor),
-                    onPressed: () {
-                      selectedColor = Colors.blue;
-                    },
-                  ),
-                ],
+              const SizedBox(height: 16),
+              const Text("Colore"),
+              Wrap(
+                spacing: 8,
+                children:
+                    [
+                      Colors.red,
+                      Colors.blue,
+                      Colors.green,
+                      Colors.orange,
+                      Colors.purple,
+                      Colors.brown,
+                    ].map((c) {
+                      return GestureDetector(
+                        onTap: () {
+                          selectedColor = c;
+                        },
+                        child: CircleAvatar(backgroundColor: c),
+                      );
+                    }).toList(),
               ),
-              Row(
-                children: [
-                  const Text("Icona: "),
-                  IconButton(
-                    icon: Icon(selectedIcon),
-                    onPressed: () {
-                      selectedIcon = Icons.star;
-                    },
-                  ),
-                ],
+              const SizedBox(height: 16),
+              const Text("Icona"),
+              Wrap(
+                spacing: 8,
+                children:
+                    [
+                      Icons.location_pin,
+                      Icons.star,
+                      Icons.flag,
+                      Icons.place,
+                      Icons.circle,
+                      Icons.square,
+                    ].map((i) {
+                      return IconButton(
+                        icon: Icon(i),
+                        onPressed: () {
+                          selectedIcon = i;
+                        },
+                      );
+                    }).toList(),
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text("Annulla"),
             ),
             ElevatedButton(
               onPressed: () {
                 controller.addLayer(nameCtrl.text, selectedColor, selectedIcon);
-                Navigator.pop(context);
+                setModalState(() {});
+                Navigator.pop(dialogContext);
               },
               child: const Text("Crea"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteLayer(
+    BuildContext context,
+    String layerId,
+    Function setModalState,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Elimina layer"),
+          content: const Text("Vuoi davvero eliminare questo layer?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Annulla"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                controller.removeLayer(layerId);
+                setModalState(() {});
+                Navigator.pop(dialogContext);
+              },
+              child: const Text("Elimina"),
             ),
           ],
         );

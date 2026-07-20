@@ -4,8 +4,14 @@ import '../models/punto_info.dart';
 class PuntoDialog extends StatefulWidget {
   final PuntoInfo? info;
   final Function(PuntoInfo) onSave;
+  final VoidCallback? onDelete;
 
-  const PuntoDialog({super.key, required this.info, required this.onSave});
+  const PuntoDialog({
+    super.key,
+    required this.info,
+    required this.onSave,
+    this.onDelete,
+  });
 
   @override
   State<PuntoDialog> createState() => _PuntoDialogState();
@@ -82,10 +88,6 @@ class _PuntoDialogState extends State<PuntoDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Annulla"),
-        ),
         ElevatedButton(
           onPressed: () {
             widget.onSave(
@@ -99,6 +101,17 @@ class _PuntoDialogState extends State<PuntoDialog> {
             Navigator.pop(context);
           },
           child: const Text("Salva"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Annulla"),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            if (widget.onDelete != null) widget.onDelete!();
+          },
+          child: const Text("Elimina", style: TextStyle(color: Colors.red)),
         ),
       ],
     );
