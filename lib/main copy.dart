@@ -1,11 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+
+// I TUOI FILE ESTERNI
+import 'models/map_layer.dart';
+import 'models/punto_info.dart';
+import 'services/layer_loader.dart';
+import 'widgets/punto_dialog.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,35 +27,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ------------------------------------------------------------
-// MODELLO DATI PER I LAYER
-// ------------------------------------------------------------
-class MapLayer {
-  final String name;
-  final String id;
-  final String url;
-  final List<String> subdomains;
-
-  MapLayer({
-    required this.name,
-    required this.id,
-    required this.url,
-    required this.subdomains,
-  });
-
-  factory MapLayer.fromJson(Map<String, dynamic> json) {
-    return MapLayer(
-      name: json['name'],
-      id: json['id'],
-      url: json['url'],
-      subdomains: List<String>.from(json['subdomains']),
-    );
-  }
-}
-
-// ------------------------------------------------------------
-// PAGINA MAPPA
-// ------------------------------------------------------------
 class MappaPage extends StatefulWidget {
   const MappaPage({super.key});
 
@@ -62,11 +36,15 @@ class MappaPage extends StatefulWidget {
 
 class _MappaPageState extends State<MappaPage> {
   final MapController _mapController = MapController();
-  final List<Marker> _markers = [];
 
+  // MARKER + INFO
+  final List<Map<String, dynamic>> _markers = [];
+
+  // LAYER
   List<MapLayer> _layers = [];
   String _mapStyle = "standard";
 
+  // POSIZIONE
   Position? _currentPosition;
   StreamSubscription<Position>? _positionSubscription;
 
@@ -87,12 +65,8 @@ class _MappaPageState extends State<MappaPage> {
   // CARICAMENTO LAYER DA JSON
   // ------------------------------------------------------------
   Future<void> _loadLayers() async {
-    final jsonString = await rootBundle.loadString('assets/map_layers.json');
-    final List<dynamic> data = json.decode(jsonString);
-
-    setState(() {
-      _layers = data.map((e) => MapLayer.fromJson(e)).toList();
-    });
+    final layers = await LayerLoader.loadLayers();
+    setState(() => _layers = layers);
   }
 
   MapLayer get _currentLayer =>
@@ -117,9 +91,7 @@ class _MappaPageState extends State<MappaPage> {
       locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),
     );
 
-    setState(() {
-      _currentPosition = position;
-    });
+    setState(() => _currentPosition = position);
 
     _centerOnPosition(position);
 
@@ -129,15 +101,18 @@ class _MappaPageState extends State<MappaPage> {
             accuracy: LocationAccuracy.best,
           ),
         ).listen((position) {
-          setState(() {
-            _currentPosition = position;
-          });
+          setState(() => _currentPosition = position);
         });
   }
 
+  void _centerOnPosition(Position position) {
+    _mapController.move(LatLng(position.latitude, position.longitude), 20);
+  }
+
   void _centerOnUser() {
-    if (_currentPosition == null) return;
-    _centerOnPosition(_currentPosition!);
+    if (_currentPosition != null) {
+      _centerOnPosition(_currentPosition!);
+    }
   }
 
   void _centerOnUserPoint() {
@@ -145,26 +120,63 @@ class _MappaPageState extends State<MappaPage> {
     _addCurrentPositionMarker();
   }
 
-  void _centerOnPosition(Position position) {
-    _mapController.move(LatLng(position.latitude, position.longitude), 18);
-  }
-
   void _addCurrentPositionMarker() {
     if (_currentPosition == null) return;
 
-    setState(() {
-      _markers.add(
-        Marker(
-          point: LatLng(
-            _currentPosition!.latitude,
-            _currentPosition!.longitude,
-          ),
-          width: 40,
-          height: 40,
-          child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
-        ),
-      );
-    });
+    final point = LatLng(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+    );
+
+    _openPuntoDialog(point, null);
+  }
+
+  // ------------------------------------------------------------
+  // POPUP CREAZIONE / MODIFICA
+  // ------------------------------------------------------------
+  void _openPuntoDialog(LatLng point, PuntoInfo? info) {
+    showDialog(
+      context: context,
+      builder: (context) => PuntoDialog(
+        info: info,
+        onSave: (newInfo) {
+          setState(() {
+            if (info == null) {
+              // CREAZIONE
+              _markers.add({
+                "marker": Marker(
+                  point: point,
+                  width: 40,
+                  height: 40,
+                  child: GestureDetector(
+                    onTap: () => _editMarker(point),
+                    child: const Icon(
+                      Icons.location_pin,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ),
+                "info": newInfo,
+              });
+            } else {
+              // MODIFICA
+              final item = _markers.firstWhere(
+                (m) => m["marker"].point == point,
+              );
+              item["info"] = newInfo;
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  void _editMarker(LatLng point) {
+    final item = _markers.firstWhere((m) => m["marker"].point == point);
+    final info = item["info"] as PuntoInfo;
+
+    _openPuntoDialog(point, info);
   }
 
   // ------------------------------------------------------------
@@ -203,20 +215,7 @@ class _MappaPageState extends State<MappaPage> {
                 initialCenter: center,
                 initialZoom: 16,
                 onTap: (tapPosition, point) {
-                  setState(() {
-                    _markers.add(
-                      Marker(
-                        point: point,
-                        width: 40,
-                        height: 40,
-                        child: const Icon(
-                          Icons.location_pin,
-                          color: Colors.red,
-                          size: 40,
-                        ),
-                      ),
-                    );
-                  });
+                  _openPuntoDialog(point, null);
                 },
               ),
               children: [
@@ -227,6 +226,7 @@ class _MappaPageState extends State<MappaPage> {
                   userAgentPackageName: 'it.emmepig.e3trace',
                 ),
 
+                // CERCHIO POSIZIONE
                 if (_currentPosition != null)
                   CircleLayer(
                     circles: [
@@ -234,13 +234,14 @@ class _MappaPageState extends State<MappaPage> {
                         point: center,
                         radius: _currentPosition!.accuracy,
                         useRadiusInMeter: true,
-                        color: Colors.blue.withOpacity(0.2),
+                        color: Colors.blue.withValues(alpha: 0.2),
                         borderColor: Colors.blue,
                         borderStrokeWidth: 1,
                       ),
                     ],
                   ),
 
+                // MARKER POSIZIONE
                 if (_currentPosition != null)
                   MarkerLayer(
                     markers: [
@@ -259,7 +260,10 @@ class _MappaPageState extends State<MappaPage> {
                     ],
                   ),
 
-                MarkerLayer(markers: _markers),
+                // MARKER UTENTE
+                MarkerLayer(
+                  markers: _markers.map((m) => m["marker"] as Marker).toList(),
+                ),
               ],
             ),
 
