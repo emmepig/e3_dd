@@ -110,4 +110,82 @@ class PointLayerController {
     }
     return null;
   }
+
+  // EXPORT: XML per un singolo layer
+  String exportLayerToXML(String layerId) {
+    final layer = layers.firstWhere((l) => l.id == layerId);
+    final points = markers[layerId] ?? [];
+
+    final buffer = StringBuffer();
+
+    buffer.writeln('<?xml version="1.0" encoding="UTF-8"?>');
+    buffer.writeln('<layer name="${_escapeXml(layer.name)}">');
+
+    for (final item in points) {
+      final marker = item["marker"] as Marker;
+      final info = item["info"] as PuntoInfo;
+
+      buffer.writeln('  <point>');
+      buffer.writeln('    <lat>${marker.point.latitude}</lat>');
+      buffer.writeln('    <lon>${marker.point.longitude}</lon>');
+      buffer.writeln('    <name>${_escapeXml(info.nome)}</name>');
+      buffer.writeln('    <note>${_escapeXml(info.note)}</note>');
+      buffer.writeln('    <dimensione>${info.dimensione}</dimensione>');
+      buffer.writeln(
+        '    <accessibilita>${info.accessibilita}</accessibilita>',
+      );
+      buffer.writeln('  </point>');
+    }
+
+    buffer.writeln('</layer>');
+
+    return buffer.toString();
+  }
+
+  // EXPORT: tutti i layer in un unico XML
+  String exportAllLayersToXML() {
+    final buffer = StringBuffer();
+
+    buffer.writeln('<?xml version="1.0" encoding="UTF-8"?>');
+    buffer.writeln('<layers>');
+
+    for (final layer in layers) {
+      final points = markers[layer.id] ?? [];
+
+      buffer.writeln('  <layer name="${_escapeXml(layer.name)}">');
+
+      for (final item in points) {
+        final marker = item["marker"] as Marker;
+        final info = item["info"] as PuntoInfo;
+
+        buffer.writeln('    <point>');
+        buffer.writeln('      <lat>${marker.point.latitude}</lat>');
+        buffer.writeln('      <lon>${marker.point.longitude}</lon>');
+        buffer.writeln('      <name>${_escapeXml(info.nome)}</name>');
+        buffer.writeln('      <note>${_escapeXml(info.note)}</note>');
+        buffer.writeln('      <dimensione>${info.dimensione}</dimensione>');
+        buffer.writeln(
+          '      <accessibilita>${info.accessibilita}</accessibilita>',
+        );
+        buffer.writeln('    </point>');
+      }
+
+      buffer.writeln('  </layer>');
+    }
+
+    buffer.writeln('</layers>');
+
+    return buffer.toString();
+  }
+
+  // Helper per evitare problemi con caratteri speciali
+  String _escapeXml(String? value) {
+    if (value == null) return '';
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&apos;');
+  }
 }

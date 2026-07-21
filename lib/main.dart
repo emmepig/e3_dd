@@ -23,7 +23,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'E3 trace',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
+      ),
       home: const MappaPage(),
     );
   }
@@ -215,7 +218,7 @@ class _MappaPageState extends State<MappaPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('E3 trace'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
 
       drawer: Drawer(
@@ -239,7 +242,11 @@ class _MappaPageState extends State<MappaPage> {
                   context: context,
                   isScrollControlled: true,
                   builder: (context) {
-                    return LayerManager(controller: pointLayerController);
+                    return LayerManager(
+                      controller: pointLayerController,
+                      onChanged: () => setState(() {}),
+                      showMessage: (String p1) {},
+                    );
                   },
                 );
               },
