@@ -11,8 +11,8 @@ class PointLayerStorage {
 
   static Future<void> save(List<PointLayer> layers) async {
     final file = File(await _filePath());
-    final jsonData = layers.map((l) => l.toJson()).toList();
-    await file.writeAsString(jsonEncode(jsonData));
+    //final jsonData = layers.map((l) => l.toJson()).toList();
+    //await file.writeAsString(jsonEncode(jsonData));
   }
 
   static Future<List<PointLayer>> load() async {
@@ -22,6 +22,6 @@ class PointLayerStorage {
     final content = await file.readAsString();
     final jsonData = jsonDecode(content);
 
-    return (jsonData as List).map((l) => PointLayer.fromJson(l)).toList();
+    //return (jsonData as List).map((l) => PointLayer.fromJson(l)).toList();
   }
 }

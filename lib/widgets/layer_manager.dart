@@ -1,24 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controllers/point_layer_controller.dart';
-import 'dart:js_interop';
-import 'package:web/web.dart' as web;
-
-void downloadXMLWeb(String xml, String filename) {
-  final blob = web.Blob(
-    [xml.toJS].toJS,
-    web.BlobPropertyBag(type: 'text/xml;charset=utf-8'),
-  );
-
-  final url = web.URL.createObjectURL(blob);
-
-  final anchor = web.HTMLAnchorElement()
-    ..href = url
-    ..download = filename;
-
-  anchor.click();
-
-  web.URL.revokeObjectURL(url);
-}
+import '../utils/xml_download.dart';
 
 class LayerManager extends StatelessWidget {
   final PointLayerController controller;
@@ -69,7 +51,12 @@ class LayerManager extends StatelessWidget {
                             children: [
                               Icon(layer.icon, color: layer.color),
                               const SizedBox(width: 8),
-                              Text(layer.name),
+                              Expanded(
+                                child: Text(
+                                  layer.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
 
@@ -145,7 +132,7 @@ class LayerManager extends StatelessWidget {
                                   final xml = controller.exportLayerToXML(
                                     layer.id,
                                   );
-                                  downloadXMLWeb(xml, "${layer.name}.xml");
+                                  downloadXML(xml, "${layer.name}.xml");
 
                                   showMessage(
                                     "GPX esportato per il layer '${layer.name}'.",

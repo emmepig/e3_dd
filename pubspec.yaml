@@ -52,7 +52,7 @@ dependencies:
   path_provider: ^2.1.6
 
   # WEB
-  web: ^0.5.1
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
