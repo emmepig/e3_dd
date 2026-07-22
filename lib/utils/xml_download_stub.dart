@@ -1,10 +1,11 @@
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'dart:typed_data';
+import 'package:file_saver/file_saver.dart';
 
 Future<void> downloadXML(String xml, String filename) async {
-  final dir = await getApplicationDocumentsDirectory();
-
-  final file = File('${dir.path}/$filename');
-
-  await file.writeAsString(xml);
+  await FileSaver.instance.saveFile(
+    name: filename.replaceAll('.xml', ''),
+    bytes: Uint8List.fromList(xml.codeUnits),
+    ext: 'xml',
+    mimeType: MimeType.xml,
+  );
 }

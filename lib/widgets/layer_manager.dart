@@ -128,11 +128,11 @@ class LayerManager extends StatelessWidget {
                               // Export GPX/XML
                               IconButton(
                                 icon: const Icon(Icons.download),
-                                onPressed: () {
+                                onPressed: () async {
                                   final xml = controller.exportLayerToXML(
                                     layer.id,
                                   );
-                                  downloadXML(xml, "${layer.name}.xml");
+                                  await downloadXML(xml, "${layer.name}.xml");
 
                                   showMessage(
                                     "GPX esportato per il layer '${layer.name}'.",
