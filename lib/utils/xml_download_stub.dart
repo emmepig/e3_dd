@@ -6,6 +6,6 @@ Future<void> downloadXML(String xml, String filename) async {
     name: filename.replaceAll('.xml', ''),
     bytes: Uint8List.fromList(xml.codeUnits),
     ext: 'xml',
-    mimeType: MimeType.xml,
+    mimeType: MimeType.text,
   );
 }

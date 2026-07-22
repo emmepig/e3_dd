@@ -132,7 +132,7 @@ class LayerManager extends StatelessWidget {
                                   final xml = controller.exportLayerToXML(
                                     layer.id,
                                   );
-                                  await downloadXML(xml, "${layer.name}.xml");
+                                  downloadXML(xml, "${layer.name}.xml");
 
                                   showMessage(
                                     "GPX esportato per il layer '${layer.name}'.",
