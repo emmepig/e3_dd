@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 
 def run_git():
+    
     # Ottiene il percorso della cartella dove si trova lo script
     current_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(current_dir)
