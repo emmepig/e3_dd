@@ -50,7 +50,7 @@ dependencies:
 
   # FILE SYSTEM
   path_provider: ^2.1.6
-  file_saver: ^0.2.14
+  share_plus: ^13.2.1
 
   # WEB
   web: ^1.1.1

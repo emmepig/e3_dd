@@ -132,7 +132,7 @@ class LayerManager extends StatelessWidget {
                                   final xml = controller.exportLayerToXML(
                                     layer.id,
                                   );
-                                  downloadXML(xml, "${layer.name}.xml");
+                                  await downloadXML(xml, "${layer.name}.xml");
 
                                   showMessage(
                                     "GPX esportato per il layer '${layer.name}'.",
@@ -178,56 +178,24 @@ class LayerManager extends StatelessWidget {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text("Nuovo layer"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: "Nome layer"),
-              ),
-              const SizedBox(height: 16),
-              const Text("Colore"),
-              Wrap(
-                spacing: 8,
-                children:
-                    [
-                      Colors.red,
-                      Colors.blue,
-                      Colors.green,
-                      Colors.orange,
-                      Colors.purple,
-                      Colors.brown,
-                    ].map((c) {
-                      return GestureDetector(
-                        onTap: () {
-                          selectedColor = c;
-                        },
-                        child: CircleAvatar(backgroundColor: c),
-                      );
-                    }).toList(),
-              ),
-              const SizedBox(height: 16),
-              const Text("Icona"),
-              Wrap(
-                spacing: 8,
-                children:
-                    [
-                      Icons.location_pin,
-                      Icons.star,
-                      Icons.flag,
-                      Icons.place,
-                      Icons.circle,
-                      Icons.square,
-                    ].map((i) {
-                      return IconButton(
-                        icon: Icon(i),
-                        onPressed: () {
-                          selectedIcon = i;
-                        },
-                      );
-                    }).toList(),
-              ),
-            ],
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return _layerEditor(
+                nameCtrl,
+                selectedColor,
+                selectedIcon,
+                (c) {
+                  setState(() {
+                    selectedColor = c;
+                  });
+                },
+                (i) {
+                  setState(() {
+                    selectedIcon = i;
+                  });
+                },
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -261,10 +229,24 @@ class LayerManager extends StatelessWidget {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text("Modifica layer"),
-          content: _layerEditor(
-            nameCtrl,
-            (c) => selectedColor = c,
-            (i) => selectedIcon = i,
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return _layerEditor(
+                nameCtrl,
+                selectedColor,
+                selectedIcon,
+                (c) {
+                  setState(() {
+                    selectedColor = c;
+                  });
+                },
+                (i) {
+                  setState(() {
+                    selectedIcon = i;
+                  });
+                },
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -276,6 +258,8 @@ class LayerManager extends StatelessWidget {
                 layer.name = nameCtrl.text;
                 layer.color = selectedColor;
                 layer.icon = selectedIcon;
+
+                controller.refreshLayerMarkers(layer.id);
 
                 setModalState(() {});
                 onChanged();
@@ -294,54 +278,98 @@ class LayerManager extends StatelessWidget {
   // ------------------------------------------------------------
   Widget _layerEditor(
     TextEditingController nameCtrl,
+    Color selectedColor,
+    IconData selectedIcon,
     Function(Color) onColor,
     Function(IconData) onIcon,
   ) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: nameCtrl,
-          decoration: const InputDecoration(labelText: "Nome layer"),
-        ),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(selectedIcon, color: selectedColor, size: 28),
+              ),
 
-        const SizedBox(height: 16),
-        const Text("Colore"),
-        Wrap(
-          spacing: 8,
-          children:
-              [
-                Colors.red,
-                Colors.blue,
-                Colors.green,
-                Colors.orange,
-                Colors.purple,
-                Colors.brown,
-              ].map((c) {
-                return GestureDetector(
-                  onTap: () => onColor(c),
-                  child: CircleAvatar(backgroundColor: c),
-                );
-              }).toList(),
-        ),
+              const SizedBox(width: 12),
 
-        const SizedBox(height: 16),
-        const Text("Icona"),
-        Wrap(
-          spacing: 8,
-          children:
-              [
-                Icons.location_pin,
-                Icons.star,
-                Icons.flag,
-                Icons.place,
-                Icons.circle,
-                Icons.square,
-              ].map((i) {
-                return IconButton(icon: Icon(i), onPressed: () => onIcon(i));
-              }).toList(),
-        ),
-      ],
+              Flexible(
+                child: TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: "Nome layer"),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          const Text("Colore"),
+
+          Wrap(
+            spacing: 8,
+            children:
+                [
+                  Colors.red,
+                  Colors.orange,
+                  Colors.yellow,
+                  Colors.blue,
+                  Colors.cyanAccent,
+                  Colors.green,
+                  Colors.purple,
+                  Colors.grey,
+                  Colors.brown,
+                  Colors.blueGrey,
+                ].map((c) {
+                  return GestureDetector(
+                    onTap: () => onColor(c),
+                    child: CircleAvatar(
+                      backgroundColor: c,
+                      child: selectedColor == c
+                          ? const Icon(Icons.check, color: Colors.white)
+                          : null,
+                    ),
+                  );
+                }).toList(),
+          ),
+
+          const SizedBox(height: 16),
+
+          const Text("Icona"),
+
+          Wrap(
+            spacing: 8,
+            children:
+                [
+                  Icons.location_pin,
+                  Icons.star,
+                  Icons.flag,
+                  Icons.place,
+                  Icons.circle,
+                  Icons.square,
+                  Icons.accessibility,
+                  Icons.account_balance,
+                  Icons.photo,
+                  Icons.yard,
+                ].map((i) {
+                  return IconButton(
+                    icon: Icon(
+                      i,
+                      color: selectedIcon == i ? Colors.blue : null,
+                    ),
+                    onPressed: () => onIcon(i),
+                  );
+                }).toList(),
+          ),
+        ],
+      ),
     );
   }
 

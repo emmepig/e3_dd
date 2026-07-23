@@ -100,6 +100,25 @@ class PointLayerController {
     markers[layerId]!.removeWhere((m) => m["marker"].point == point);
   }
 
+  // MODIFICA VISUALIZZAZIONE
+  void refreshLayerMarkers(String layerId) {
+    final layer = layers.firstWhere((l) => l.id == layerId);
+
+    for (final item in markers[layerId]!) {
+      final marker = item["marker"] as Marker;
+
+      item["marker"] = Marker(
+        point: marker.point,
+        width: 40,
+        height: 40,
+        child: GestureDetector(
+          onTap: () {},
+          child: Icon(layer.icon, color: layer.color, size: 40),
+        ),
+      );
+    }
+  }
+
   // CERCA PUNTO IN TUTTI I LAYER
   Map<String, dynamic>? findPoint(LatLng point) {
     for (final entry in markers.entries) {
@@ -109,6 +128,36 @@ class PointLayerController {
       }
     }
     return null;
+  }
+
+  String getNextPointName() {
+    final usedNames = <String>{};
+    int n = 1;
+    int nMax = 1;
+
+    for (final item in markers[activeLayerId] ?? []) {
+      n++;
+      final info = item["info"] as PuntoInfo?;
+      if (info != null && info.nome.isNotEmpty) {
+        usedNames.add(info.nome);
+
+        final nQui = int.tryParse(info.nome);
+
+        if (nQui != null && nQui >= nMax) {
+          nMax = nQui + 1;
+        }
+      }
+    }
+
+    while (usedNames.contains(n.toString())) {
+      n++;
+    }
+
+    if (n > nMax) {
+      return n.toString();
+    } else {
+      return nMax.toString();
+    }
   }
 
   // EXPORT: XML per un singolo layer

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/punto_info.dart';
+import '../controllers/point_layer_controller.dart';
 
 class PuntoDialog extends StatefulWidget {
   final PuntoInfo? info;
   final Function(PuntoInfo) onSave;
   final VoidCallback? onDelete;
+  final PointLayerController controller;
 
   const PuntoDialog({
     super.key,
     required this.info,
     required this.onSave,
+    required this.controller,
     this.onDelete,
   });
 
@@ -20,17 +23,20 @@ class PuntoDialog extends StatefulWidget {
 class _PuntoDialogState extends State<PuntoDialog> {
   late TextEditingController nomeController;
   late TextEditingController noteController;
-  int dimensione = 1;
-  int accessibilita = 1;
+
+  int dimensione = 3;
+  int accessibilita = 3;
 
   @override
   void initState() {
     super.initState();
-    nomeController = TextEditingController(text: widget.info?.nome ?? "");
+    nomeController = TextEditingController(
+      text: widget.info?.nome ?? widget.controller.getNextPointName(),
+    );
     noteController = TextEditingController(text: widget.info?.note ?? "");
 
-    dimensione = widget.info?.dimensione ?? 1;
-    accessibilita = widget.info?.accessibilita ?? 1;
+    dimensione = widget.info?.dimensione ?? 3;
+    accessibilita = widget.info?.accessibilita ?? 3;
   }
 
   @override

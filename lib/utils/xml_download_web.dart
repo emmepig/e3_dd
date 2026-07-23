@@ -1,7 +1,7 @@
 import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
-void downloadXML(String xml, String filename) {
+Future<void> downloadXML(String xml, String filename) async {
   final blob = web.Blob(
     [xml.toJS].toJS,
     web.BlobPropertyBag(type: 'text/xml;charset=utf-8'),

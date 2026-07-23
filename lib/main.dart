@@ -146,6 +146,7 @@ class _MappaPageState extends State<MappaPage> {
       context: context,
       builder: (context) => PuntoDialog(
         info: info,
+        controller: pointLayerController,
         onSave: (newInfo) {
           setState(() {
             if (info == null) {
@@ -217,8 +218,9 @@ class _MappaPageState extends State<MappaPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('E3 trace'),
+        title: const Text('E3 trace', style: TextStyle(color: Colors.white)),
         backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
 
       drawer: Drawer(
