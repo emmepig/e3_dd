@@ -60,6 +60,14 @@ class _MappaPageState extends State<MappaPage> {
     super.initState();
     _loadLayers();
     _initLocation();
+
+    _loadPointData();
+  }
+
+  Future<void> _loadPointData() async {
+    await pointLayerController.loadData();
+
+    setState(() {});
   }
 
   @override
@@ -151,7 +159,7 @@ class _MappaPageState extends State<MappaPage> {
           setState(() {
             if (info == null) {
               // CREAZIONE
-              pointLayerController.addPoint(point, newInfo, _editMarker);
+              pointLayerController.addPoint(point, newInfo);
             } else {
               // MODIFICA
               pointLayerController.updatePoint(point, newInfo);
@@ -194,16 +202,14 @@ class _MappaPageState extends State<MappaPage> {
   // MODIFICA PUNTO (CERCA IN TUTTI I LAYER)
   // ------------------------------------------------------------
   void _editMarker(LatLng point) {
-    final result = pointLayerController.findPoint(point);
+    final pointData = pointLayerController.findPoint(point);
 
-    if (result != null) {
-      final layerId = result["layerId"];
-      final item = result["item"];
-      final info = item["info"] as PuntoInfo;
+    if (pointData != null) {
+      setState(() {
+        pointLayerController.activeLayerId = pointData.layerId;
+      });
 
-      setState(() => pointLayerController.activeLayerId = layerId);
-
-      _openPuntoDialog(point, info);
+      _openPuntoDialog(point, pointData.info);
     }
   }
 
@@ -312,16 +318,7 @@ class _MappaPageState extends State<MappaPage> {
 
                 // MARKER UTENTE PER LAYER
                 MarkerLayer(
-                  markers: pointLayerController.markers.entries
-                      .where(
-                        (entry) =>
-                            pointLayerController.visibility[entry.key] == true,
-                      )
-                      .expand(
-                        (entry) =>
-                            entry.value.map((m) => m["marker"] as Marker),
-                      )
-                      .toList(),
+                  markers: pointLayerController.getVisibleMarkers(_editMarker),
                 ),
               ],
             ),

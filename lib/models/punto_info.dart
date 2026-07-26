@@ -18,12 +18,12 @@ class PuntoInfo {
     "note": note,
   };
 
-  static PuntoInfo fromJson(Map<String, dynamic> json) {
+  factory PuntoInfo.fromMap(Map<String, dynamic> map) {
     return PuntoInfo(
-      nome: json["nome"],
-      dimensione: json["dimensione"],
-      accessibilita: json["accessibilita"],
-      note: json["note"],
+      nome: map['nome'],
+      dimensione: map['dimensione'],
+      accessibilita: map['accessibilita'],
+      note: map['note'],
     );
   }
 }

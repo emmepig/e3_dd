@@ -3,8 +3,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/punto_info.dart';
 import '../models/point_layer.dart';
+import '../models/point_marker.dart';
+import '../database/db_helper.dart';
 
 class PointLayerController {
+  final DBHelper db = DBHelper.instance;
+
   // LAYER LIST
   final List<PointLayer> layers = [
     PointLayer(
@@ -19,36 +23,85 @@ class PointLayerController {
   // ACTIVE LAYER
   String activeLayerId = "default";
 
-  // MARKERS PER LAYER
-  final Map<String, List<Map<String, dynamic>>> markers = {"default": []};
+  // POINTS
+  final List<PointMarker> points = [];
 
   // VISIBILITY PER LAYER
   final Map<String, bool> visibility = {"default": true};
 
+  Future<void> loadData() async {
+    layers.clear();
+    points.clear();
+
+    final dbLayers = await db.getLayers();
+    final dbPoints = await db.getPoints();
+
+    if (dbLayers.isEmpty) {
+      final defaultLayer = PointLayer(
+        id: "default",
+        name: "Default",
+        color: Colors.red,
+        icon: Icons.location_pin,
+        visible: true,
+      );
+
+      layers.add(defaultLayer);
+
+      await db.insertLayer(defaultLayer);
+    } else {
+      layers.addAll(dbLayers);
+    }
+
+    points.addAll(dbPoints);
+
+    visibility.clear();
+
+    for (final layer in layers) {
+      visibility[layer.id] = layer.visible;
+    }
+
+    activeLayerId = layers.first.id;
+  }
+
   // AGGIUNTA LAYER
-  void addLayer(String name, Color color, IconData icon) {
+  Future<void> addLayer(String name, Color color, IconData icon) async {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
 
-    layers.add(
-      PointLayer(id: id, name: name, color: color, icon: icon, visible: true),
+    final layer = PointLayer(
+      id: id,
+      name: name,
+      color: color,
+      icon: icon,
+      visible: true,
     );
 
-    markers[id] = [];
-    visibility[id] = true;
+    layers.add(layer);
+
+    await db.insertLayer(layer);
 
     activeLayerId = id;
   }
 
   // ELIMINAZIONE LAYER
-  void removeLayer(String id) {
+  Future<void> removeLayer(String id) async {
     if (layers.length <= 1) return;
 
     layers.removeWhere((l) => l.id == id);
-    markers.remove(id);
+
+    points.removeWhere((p) => p.layerId == id);
+
     visibility.remove(id);
 
     if (activeLayerId == id) {
       activeLayerId = layers.first.id;
+    }
+
+    await db.deleteLayer(id);
+
+    for (final p in points.where((e) => e.layerId == id).toList()) {
+      if (p.id != null) {
+        await db.deletePoint(p.id!);
+      }
     }
   }
 
@@ -58,125 +111,133 @@ class PointLayerController {
   }
 
   // VISIBILITÀ
-  void toggleVisibility(String id, bool v) {
+  Future<void> toggleVisibility(String id, bool v) async {
     visibility[id] = v;
+
     final layer = layers.firstWhere((l) => l.id == id);
     layer.visible = v;
+
+    await db.updateLayer(layer);
   }
 
   // AGGIUNTA PUNTO
-  void addPoint(LatLng point, PuntoInfo info, void Function(LatLng) onTapEdit) {
-    final layer = layers.firstWhere((l) => l.id == activeLayerId);
+  Future<void> addPoint(LatLng point, PuntoInfo info) async {
+    final marker = PointMarker(
+      layerId: activeLayerId,
+      lat: point.latitude,
+      lon: point.longitude,
+      info: info,
+    );
 
-    markers[activeLayerId]!.add({
-      "marker": Marker(
-        point: point,
-        width: 40,
-        height: 40,
-        child: GestureDetector(
-          onTap: () => onTapEdit(point),
-          child: Icon(layer.icon, color: layer.color, size: 40),
-        ),
-      ),
-      "info": info,
-    });
+    points.add(marker);
+
+    final id = await db.insertPoint(marker);
+
+    marker.id = id;
   }
 
   // MODIFICA PUNTO
-  void updatePoint(LatLng point, PuntoInfo info) {
-    final result = findPoint(point);
-    if (result == null) return;
+  Future<void> updatePoint(LatLng point, PuntoInfo info) async {
+    final p = findPoint(point);
 
-    final item = result["item"];
-    item["info"] = info;
+    if (p == null) return;
+
+    p.info = info;
+
+    if (p.id != null) {
+      await db.updatePoint(p);
+    }
   }
 
   // ELIMINA PUNTO
-  void deletePoint(LatLng point) {
-    final result = findPoint(point);
-    if (result == null) return;
+  Future<void> deletePoint(LatLng point) async {
+    final p = findPoint(point);
 
-    final layerId = result["layerId"];
-    markers[layerId]!.removeWhere((m) => m["marker"].point == point);
+    if (p == null) return;
+
+    if (p.id != null) {
+      await db.deletePoint(p.id!);
+    }
+
+    points.remove(p);
   }
 
-  // MODIFICA VISUALIZZAZIONE
-  void refreshLayerMarkers(String layerId) {
-    final layer = layers.firstWhere((l) => l.id == layerId);
+  // CERCA PUNTO
+  PointMarker? findPoint(LatLng point) {
+    try {
+      return points.firstWhere(
+        (p) => p.lat == point.latitude && p.lon == point.longitude,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
-    for (final item in markers[layerId]!) {
-      final marker = item["marker"] as Marker;
+  // MARKER VISIBILI PER FLUTTER_MAP
+  List<Marker> getVisibleMarkers(void Function(LatLng) onTapEdit) {
+    final result = <Marker>[];
 
-      item["marker"] = Marker(
-        point: marker.point,
-        width: 40,
-        height: 40,
-        child: GestureDetector(
-          onTap: () {},
-          child: Icon(layer.icon, color: layer.color, size: 40),
+    for (final p in points) {
+      final layer = layers.firstWhere((l) => l.id == p.layerId);
+
+      if (!layer.visible) continue;
+
+      result.add(
+        Marker(
+          point: LatLng(p.lat, p.lon),
+          width: 40,
+          height: 40,
+          child: GestureDetector(
+            onTap: () => onTapEdit(LatLng(p.lat, p.lon)),
+            child: Icon(layer.icon, color: layer.color, size: 40),
+          ),
         ),
       );
     }
-  }
 
-  // CERCA PUNTO IN TUTTI I LAYER
-  Map<String, dynamic>? findPoint(LatLng point) {
-    for (final entry in markers.entries) {
-      final match = entry.value.where((m) => m["marker"].point == point);
-      if (match.isNotEmpty) {
-        return {"layerId": entry.key, "item": match.first};
-      }
-    }
-    return null;
+    return result;
   }
 
   String getNextPointName() {
-    final usedNames = <String>{};
     int n = 1;
     int nMax = 1;
 
-    for (final item in markers[activeLayerId] ?? []) {
+    final layerPoints = points.where((p) => p.layerId == activeLayerId);
+
+    for (final point in layerPoints) {
       n++;
-      final info = item["info"] as PuntoInfo?;
-      if (info != null && info.nome.isNotEmpty) {
-        usedNames.add(info.nome);
 
-        final nQui = int.tryParse(info.nome);
+      final nome = point.info.nome;
 
-        if (nQui != null && nQui >= nMax) {
-          nMax = nQui + 1;
-        }
+      if (nome.isEmpty) continue;
+
+      final nQui = int.tryParse(nome);
+
+      if (nQui != null && nQui >= nMax) {
+        nMax = nQui + 1;
       }
     }
 
-    while (usedNames.contains(n.toString())) {
-      n++;
-    }
-
-    if (n > nMax) {
-      return n.toString();
-    } else {
-      return nMax.toString();
-    }
+    return n > nMax ? n.toString() : nMax.toString();
   }
 
-  // EXPORT: XML per un singolo layer
+  // EXPORT XML SINGOLO LAYER
   String exportLayerToXML(String layerId) {
     final layer = layers.firstWhere((l) => l.id == layerId);
-    final points = markers[layerId] ?? [];
+
+    final layerPoints = points.where((p) => p.layerId == layerId);
 
     final buffer = StringBuffer();
 
     buffer.writeln('<?xml version="1.0" encoding="UTF-8"?>');
     buffer.writeln('<layer name="${_escapeXml(layer.name)}">');
 
-    for (final item in points) {
-      final marker = item["marker"] as Marker;
-      final info = item["info"] as PuntoInfo;
+    for (final p in layerPoints) {
+      final info = p.info;
 
       buffer.writeln('  <point>');
-      buffer.writeln('    <lat>${marker.point.latitude}</lat>');
-      buffer.writeln('    <lon>${marker.point.longitude}</lon>');
+      buffer.writeln('    <lat>${p.lat}</lat>');
+      buffer.writeln('    <lon>${p.lon}</lon>');
       buffer.writeln('    <name>${_escapeXml(info.nome)}</name>');
       buffer.writeln('    <note>${_escapeXml(info.note)}</note>');
       buffer.writeln('    <dimensione>${info.dimensione}</dimensione>');
@@ -191,7 +252,7 @@ class PointLayerController {
     return buffer.toString();
   }
 
-  // EXPORT: tutti i layer in un unico XML
+  // EXPORT XML COMPLETO
   String exportAllLayersToXML() {
     final buffer = StringBuffer();
 
@@ -199,17 +260,16 @@ class PointLayerController {
     buffer.writeln('<layers>');
 
     for (final layer in layers) {
-      final points = markers[layer.id] ?? [];
-
       buffer.writeln('  <layer name="${_escapeXml(layer.name)}">');
 
-      for (final item in points) {
-        final marker = item["marker"] as Marker;
-        final info = item["info"] as PuntoInfo;
+      final layerPoints = points.where((p) => p.layerId == layer.id);
+
+      for (final p in layerPoints) {
+        final info = p.info;
 
         buffer.writeln('    <point>');
-        buffer.writeln('      <lat>${marker.point.latitude}</lat>');
-        buffer.writeln('      <lon>${marker.point.longitude}</lon>');
+        buffer.writeln('      <lat>${p.lat}</lat>');
+        buffer.writeln('      <lon>${p.lon}</lon>');
         buffer.writeln('      <name>${_escapeXml(info.nome)}</name>');
         buffer.writeln('      <note>${_escapeXml(info.note)}</note>');
         buffer.writeln('      <dimensione>${info.dimensione}</dimensione>');
@@ -227,9 +287,9 @@ class PointLayerController {
     return buffer.toString();
   }
 
-  // Helper per evitare problemi con caratteri speciali
   String _escapeXml(String? value) {
     if (value == null) return '';
+
     return value
         .replaceAll('&', '&amp;')
         .replaceAll('<', '&lt;')

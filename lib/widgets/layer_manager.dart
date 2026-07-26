@@ -61,7 +61,7 @@ class LayerManager extends StatelessWidget {
                           ),
 
                           leading: Checkbox(
-                            value: controller.visibility[layer.id],
+                            value: controller.visibility[layer.id] ?? true,
                             onChanged: (v) {
                               // Se il layer è attivo → NON permettere di disattivarlo
                               if (layer.id == controller.activeLayerId &&
@@ -254,12 +254,14 @@ class LayerManager extends StatelessWidget {
               child: const Text("Annulla"),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 layer.name = nameCtrl.text;
                 layer.color = selectedColor;
                 layer.icon = selectedIcon;
 
-                controller.refreshLayerMarkers(layer.id);
+                await controller.db.updateLayer(layer);
+
+                // controller.refreshLayerMarkers(layer.id);
 
                 setModalState(() {});
                 onChanged();
