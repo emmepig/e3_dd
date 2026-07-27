@@ -35,7 +35,9 @@ class DBHelper {
         name TEXT NOT NULL,
         color INTEGER NOT NULL,
         icon INTEGER NOT NULL,
-        visible INTEGER NOT NULL DEFAULT 1
+        visible INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     ''');
 
@@ -48,9 +50,35 @@ class DBHelper {
         nome TEXT,
         dimensione INTEGER,
         accessibilita INTEGER,
-        note TEXT
+        note TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     ''');
+
+    // Aggiornamento automatico di updated_at per layers
+    await db.execute('''
+    CREATE TRIGGER layers_updated_at
+    AFTER UPDATE ON layers
+    FOR EACH ROW
+    BEGIN
+      UPDATE layers
+      SET updated_at = CURRENT_TIMESTAMP
+      WHERE id = OLD.id;
+    END;
+  ''');
+
+    // Aggiornamento automatico di updated_at per points
+    await db.execute('''
+    CREATE TRIGGER points_updated_at
+    AFTER UPDATE ON points
+    FOR EACH ROW
+    BEGIN
+      UPDATE points
+      SET updated_at = CURRENT_TIMESTAMP
+      WHERE id = OLD.id;
+    END;
+  ''');
   }
 
   Future<void> insertLayer(PointLayer layer) async {
