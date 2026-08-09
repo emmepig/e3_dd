@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 
 // I TUOI FILE ESTERNI
 import 'models/map_layer.dart';
@@ -11,9 +12,16 @@ import 'services/layer_loader.dart';
 import 'widgets/punto_dialog.dart';
 import 'widgets/layer_manager.dart';
 import 'controllers/point_layer_controller.dart';
+import 'services/auth_provider.dart';
+import 'pages/settings_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -218,6 +226,8 @@ class _MappaPageState extends State<MappaPage> {
   // ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     final LatLng center = _currentPosition != null
         ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
         : const LatLng(41.9028, 12.4964); // Roma
@@ -257,6 +267,48 @@ class _MappaPageState extends State<MappaPage> {
                     );
                   },
                 );
+              },
+            ),
+
+            const Divider(),
+
+            // VOCE DINAMICA
+            if (!auth.isLoggedIn)
+              ListTile(
+                leading: const Icon(Icons.login),
+                title: const Text('Accedi'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await auth.login();
+                },
+              )
+            else
+              ListTile(
+                leading: auth.user?.photoUrl != null
+                    ? CircleAvatar(
+                        backgroundImage: NetworkImage(auth.user!.photoUrl!),
+                      )
+                    : const CircleAvatar(child: Icon(Icons.person)),
+                title: Text(auth.user!.name),
+                subtitle: Text(auth.user!.email),
+                onTap: () {
+                  Navigator.pop(context);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsPage()),
+                  );
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Esci'),
+              onTap: () async {
+                await context.read<AuthProvider>().logout();
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               },
             ),
           ],
