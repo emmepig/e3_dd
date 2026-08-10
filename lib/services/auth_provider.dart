@@ -35,7 +35,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> login() async {
     await initialize();
 
-    final GoogleSignInAccount? account = await GoogleSignIn.instance
+    final GoogleSignInAccount account = await GoogleSignIn.instance
         .authenticate();
 
     if (account == null) {
