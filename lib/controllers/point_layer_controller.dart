@@ -222,70 +222,43 @@ class PointLayerController {
   }
 
   // EXPORT XML SINGOLO LAYER
-  String exportLayerToXML(String layerId) {
-    final layer = layers.firstWhere((l) => l.id == layerId);
-
-    final layerPoints = points.where((p) => p.layerId == layerId);
-
+  String exportLayerToXML([String? layerId]) {
     final buffer = StringBuffer();
-
-    buffer.writeln('<?xml version="1.0" encoding="UTF-8"?>');
-    buffer.writeln('<layer name="${_escapeXml(layer.name)}">');
-
-    for (final p in layerPoints) {
-      final info = p.info;
-
-      buffer.writeln('  <point>');
-      buffer.writeln('    <lat>${p.lat}</lat>');
-      buffer.writeln('    <lon>${p.lon}</lon>');
-      buffer.writeln('    <name>${_escapeXml(info.nome)}</name>');
-      buffer.writeln('    <note>${_escapeXml(info.note)}</note>');
-      buffer.writeln('    <dimensione>${info.dimensione}</dimensione>');
-      buffer.writeln(
-        '    <accessibilita>${info.accessibilita}</accessibilita>',
-      );
-      buffer.writeln('  </point>');
-    }
-
-    buffer.writeln('</layer>');
-
-    return buffer.toString();
-  }
-
-  // EXPORT XML COMPLETO
-  String exportAllLayersToXML() {
-    final buffer = StringBuffer();
-
     buffer.writeln('<?xml version="1.0" encoding="UTF-8"?>');
     buffer.writeln('<layers>');
 
-    for (final layer in layers) {
-      buffer.writeln('  <layer name="${_escapeXml(layer.name)}">');
+    Iterable<PointLayer> elenco = layers;
+    if (layerId != null) elenco = layers.where((l) => l.id == layerId);
 
+    for (final layer in elenco) {
+      buffer.writeln(
+        '<layer id="${layer.id}" name="${_escapeXml(layer.name)}">',
+      );
       final layerPoints = points.where((p) => p.layerId == layer.id);
 
       for (final p in layerPoints) {
         final info = p.info;
 
-        buffer.writeln('    <point>');
-        buffer.writeln('      <lat>${p.lat}</lat>');
-        buffer.writeln('      <lon>${p.lon}</lon>');
-        buffer.writeln('      <name>${_escapeXml(info.nome)}</name>');
-        buffer.writeln('      <note>${_escapeXml(info.note)}</note>');
-        buffer.writeln('      <dimensione>${info.dimensione}</dimensione>');
+        buffer.writeln('  <point id="${p.id}">');
+        buffer.writeln('    <lat>${p.lat}</lat>');
+        buffer.writeln('    <lon>${p.lon}</lon>');
+        buffer.writeln('    <name>${_escapeXml(info.nome)}</name>');
+        buffer.writeln('    <note>${_escapeXml(info.note)}</note>');
+        buffer.writeln('    <dimensione>${info.dimensione}</dimensione>');
         buffer.writeln(
-          '      <accessibilita>${info.accessibilita}</accessibilita>',
+          '    <accessibilita>${info.accessibilita}</accessibilita>',
         );
-        buffer.writeln('    </point>');
+        buffer.writeln('  </point>');
       }
 
-      buffer.writeln('  </layer>');
+      buffer.writeln('</layer>');
     }
-
     buffer.writeln('</layers>');
 
     return buffer.toString();
   }
+
+  // EXPORT XML COMPLETO
 
   String _escapeXml(String? value) {
     if (value == null) return '';

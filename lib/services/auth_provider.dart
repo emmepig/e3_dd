@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import '../models/app_user.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/app_user.dart';
-import './app_config.dart';
 
 class AuthProvider extends ChangeNotifier {
   AppUser? _user;
@@ -30,14 +29,33 @@ class AuthProvider extends ChangeNotifier {
 
     _prefs = await SharedPreferences.getInstance();
 
+    // debugPrint(
+    //   '************************** initialize *********************************',
+    // );
+
     // 1. Inizializza l'istanza
     await GoogleSignIn.instance.initialize(
-      serverClientId: AppConfig.serverClientId,
+      serverClientId:
+          '920318417311-ptqnaoec8b7v1h170ojj8eredd6cilja.apps.googleusercontent.com',
     );
 
     _initialized = true;
 
-    await _getAccount();
+    final wasLogged = _prefs!.getBool('logged_in') ?? false;
+    _user = null;
+    if (!wasLogged) {
+      notifyListeners();
+      return;
+    }
+
+    _user = AppUser(
+      id: _prefs!.getString('user_id') ?? '',
+      name: _prefs!.getString('user_name') ?? '',
+      email: _prefs!.getString('user_email') ?? '',
+      photoUrl: _prefs!.getString('user_photo'),
+    );
+
+    notifyListeners();
   }
 
   Future<void> login() async {
@@ -46,7 +64,7 @@ class AuthProvider extends ChangeNotifier {
 
       // Se l'utente è già presente dopo initialize(), evitiamo di richiamare authenticate()
       if (_user != null) {
-        await _killAccount();
+        notifyListeners();
         return;
       }
 
@@ -54,6 +72,8 @@ class AuthProvider extends ChangeNotifier {
       final GoogleSignInAccount account = await GoogleSignIn.instance
           .authenticate();
 
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('logged_in', true);
       await _setAccount(account);
     } catch (e, st) {
       debugPrint('TIPO: ${e.runtimeType}');
@@ -80,39 +100,18 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _getAccount() async {
-    final wasLogged = _prefs!.getBool('logged_in') ?? false;
-
-    if (!wasLogged) {
-      _user = null;
-      notifyListeners();
-      return;
-    }
-
-    _user = AppUser(
-      id: _prefs!.getString('user_id') ?? '',
-      name: _prefs!.getString('user_name') ?? '',
-      email: _prefs!.getString('user_email') ?? '',
-      photoUrl: _prefs!.getString('user_photo'),
-    );
-
-    notifyListeners();
-  }
-
-  Future<void> _killAccount() async {
-    _user = null;
-
-    await _prefs!.remove('logged_in');
-    await _prefs!.remove('user_id');
-    await _prefs!.remove('user_name');
-    await _prefs!.remove('user_email');
-    await _prefs!.remove('user_photo');
-
-    notifyListeners();
-  }
-
   Future<void> logout() async {
     await GoogleSignIn.instance.signOut();
-    await _killAccount();
+
+    _user = null;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('logged_in');
+    await prefs.remove('user_id');
+    await prefs.remove('user_name');
+    await prefs.remove('user_email');
+    await prefs.remove('user_photo');
+
+    notifyListeners();
   }
 }

@@ -300,7 +300,10 @@ class _MappaPageState extends State<MappaPage> {
 
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingsPage()),
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SettingsPage(controller: pointLayerController),
+                    ),
                   );
                 },
               ),

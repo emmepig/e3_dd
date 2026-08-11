@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controllers/point_layer_controller.dart';
 import '../utils/xml_download.dart';
+import 'package:intl/intl.dart';
 
 class LayerManager extends StatelessWidget {
   final PointLayerController controller;
@@ -132,10 +133,20 @@ class LayerManager extends StatelessWidget {
                                   final xml = controller.exportLayerToXML(
                                     layer.id,
                                   );
-                                  await downloadXML(xml, "${layer.name}.xml");
+                                  final timestamp = DateFormat(
+                                    'yyyyMMdd_HHmmss',
+                                  ).format(DateTime.now());
+                                  final messaggio =
+                                      "GPX esportato per il layer '${layer.name}'.";
+                                  await downloadXML(
+                                    xml,
+                                    "${layer.name}_$timestamp.xml",
+                                  );
 
-                                  showMessage(
-                                    "GPX esportato per il layer '${layer.name}'.",
+                                  if (!context.mounted) return;
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(messaggio)),
                                   );
                                 },
                               ),
