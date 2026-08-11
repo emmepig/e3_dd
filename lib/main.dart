@@ -15,10 +15,14 @@ import 'controllers/point_layer_controller.dart';
 import 'services/auth_provider.dart';
 import 'pages/settings_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final authProvider = AuthProvider();
+  await authProvider.initialize();
+
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      providers: [ChangeNotifierProvider.value(value: authProvider)],
       child: const MyApp(),
     ),
   );
@@ -300,17 +304,18 @@ class _MappaPageState extends State<MappaPage> {
                   );
                 },
               ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Esci'),
-              onTap: () async {
-                await context.read<AuthProvider>().logout();
+            if (auth.isLoggedIn)
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text('Esci'),
+                onTap: () async {
+                  await context.read<AuthProvider>().logout();
 
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              },
-            ),
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
           ],
         ),
       ),
