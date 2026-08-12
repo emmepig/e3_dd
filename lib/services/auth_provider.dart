@@ -10,6 +10,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
   bool _initialized = false;
   SharedPreferences? _prefs;
+  final bool _loggaTutto = false;
 
   //Future<void> login() async {
   // per adesso simuliamo
@@ -24,29 +25,41 @@ class AuthProvider extends ChangeNotifier {
   //notifyListeners();
   //}
 
+  void loggaTesto(testo) {
+    if (_loggaTutto) {
+      debugPrint('>>>>>>>>>>>>>>> $testo');
+    }
+  }
+
   Future<void> initialize() async {
-    if (_initialized) return;
+    loggaTesto('initialize');
+
+    if (_initialized) {
+      loggaTesto('già inizializzata');
+      return;
+    }
 
     _prefs = await SharedPreferences.getInstance();
-
-    // debugPrint(
-    //   '************************** initialize *********************************',
-    // );
+    loggaTesto('_prefs ok');
 
     // 1. Inizializza l'istanza
     await GoogleSignIn.instance.initialize(
       serverClientId:
           '920318417311-ptqnaoec8b7v1h170ojj8eredd6cilja.apps.googleusercontent.com',
     );
+    loggaTesto('google instance ok');
 
     _initialized = true;
 
     final wasLogged = _prefs!.getBool('logged_in') ?? false;
+    loggaTesto('recuperato wasLogged');
     _user = null;
     if (!wasLogged) {
+      loggaTesto('NON LOGGATO');
       notifyListeners();
       return;
     }
+    loggaTesto('LOGGATO');
 
     _user = AppUser(
       id: _prefs!.getString('user_id') ?? '',
@@ -54,6 +67,7 @@ class AuthProvider extends ChangeNotifier {
       email: _prefs!.getString('user_email') ?? '',
       photoUrl: _prefs!.getString('user_photo'),
     );
+    loggaTesto(_prefs!.getString('user_name'));
 
     notifyListeners();
   }
@@ -64,13 +78,16 @@ class AuthProvider extends ChangeNotifier {
 
       // Se l'utente è già presente dopo initialize(), evitiamo di richiamare authenticate()
       if (_user != null) {
+        loggaTesto('già loggato... perché lo richiamo?!');
         notifyListeners();
         return;
       }
 
       // Chiamata esplicita all'autenticazione UI
+      loggaTesto('parte google?');
       final GoogleSignInAccount account = await GoogleSignIn.instance
           .authenticate();
+      loggaTesto('google tornato');
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('logged_in', true);

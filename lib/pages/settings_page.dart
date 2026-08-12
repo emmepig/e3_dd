@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../services/auth_provider.dart';
 import '../controllers/point_layer_controller.dart';
 import '../utils/xml_download.dart';
-import 'package:intl/intl.dart';
+import '../utils/xml_send_web.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.controller});
@@ -17,7 +18,22 @@ class SettingsPage extends StatelessWidget {
         children: [
           ListTile(
             leading: const Icon(Icons.sync),
-            title: const Text('Sincronizza'),
+            title: const Text('Sincronizza WEB'),
+            onTap: () async {
+              final xml = controller.exportLayerToXML();
+
+              final messaggioFinale = await inviaXmlAlServer(xml: xml);
+
+              if (!context.mounted) return;
+
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(messaggioFinale)));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.download),
+            title: const Text('Download XML'),
             onTap: () async {
               final xml = controller.exportLayerToXML();
 

@@ -55,3 +55,15 @@ flutter build apk --debug
 
 flutter devices
 flutter run
+
+keytool -list -v -alias androiddebugkey -keystore "$env:USERPROFILE\.android\debug.keystore" -storepass android -keypass android
+
+impronte digitali:
+Impronte digitali certificato:
+
+Portatile:
+SHA1: 77:4E:A2:4B:C9:EE:43:B7:27:49:32:E3:DC:F2:61:AF:90:BC:5C:61
+SHA256: 27:AB:F3:77:C3:A7:BA:9B:AB:49:EF:23:F2:9D:0C:D7:A1:10:5E:02:5D:C5:F6:D4:81:64:36:77:CC:D7:46:76
+
+Fisso Regione:
+C8:D3:52:71:60:EF:E9:98:5B:4A:50:BC:01:2A:BB:E2:DB:8E:0B:F8
