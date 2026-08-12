@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_icons.dart';
 
 class PointLayer {
   String id;
@@ -24,7 +25,7 @@ class PointLayer {
       'id': id,
       'name': name,
       'color': color.toARGB32(),
-      'icon': icon.codePoint,
+      'icon': _iconToString(icon),
       'visible': visible ? 1 : 0,
     };
   }
@@ -34,7 +35,7 @@ class PointLayer {
       id: map['id'],
       name: map['name'],
       color: Color(map['color']),
-      icon: IconData(map['icon'] as int, fontFamily: 'MaterialIcons'),
+      icon: AppIcons.icons[map['icon']] ?? Icons.place,
       visible: map['visible'] == 1,
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'])
@@ -43,5 +44,14 @@ class PointLayer {
           ? DateTime.parse(map['updated_at'])
           : null,
     );
+  }
+
+  static String _iconToString(IconData icon) {
+    return AppIcons.icons.entries
+        .firstWhere(
+          (e) => e.value.codePoint == icon.codePoint,
+          orElse: () => const MapEntry('place', Icons.place),
+        )
+        .key;
   }
 }

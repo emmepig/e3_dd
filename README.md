@@ -67,3 +67,9 @@ SHA256: 27:AB:F3:77:C3:A7:BA:9B:AB:49:EF:23:F2:9D:0C:D7:A1:10:5E:02:5D:C5:F6:D4:
 
 Fisso Regione:
 C8:D3:52:71:60:EF:E9:98:5B:4A:50:BC:01:2A:BB:E2:DB:8E:0B:F8
+
+flutter build apk --release.
+flutter build apk --release --no-tree-shake-icons
+flutter build appbundle --release --no-tree-shake-icons
+
+Il file finale si troverà nel percorso build/app/outputs/flutter-apk/app-release.apk
