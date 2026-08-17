@@ -14,11 +14,14 @@ import 'widgets/layer_manager.dart';
 import 'controllers/point_layer_controller.dart';
 import 'services/auth_provider.dart';
 import 'pages/settings_page.dart';
+import 'services/app_settings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final authProvider = AuthProvider();
   await authProvider.initialize();
+
+  await AppSettings.load();
 
   runApp(
     MultiProvider(
@@ -149,6 +152,13 @@ class _MappaPageState extends State<MappaPage> {
 
   void _addCurrentPositionMarker() {
     if (_currentPosition == null) return;
+
+    if (_currentPosition!.accuracy > AppSettings.gpsAccuracyThreshold) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Attendere un segnale GPS più preciso")),
+      );
+      return;
+    }
 
     final point = LatLng(
       _currentPosition!.latitude,
@@ -386,6 +396,23 @@ class _MappaPageState extends State<MappaPage> {
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          if (_currentPosition != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _gpsColor(_currentPosition!.accuracy),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                "GPS ${_currentPosition!.accuracy.toStringAsFixed(1)} m",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 12),
           FloatingActionButton(
             heroTag: "center",
             onPressed: _centerOnUser,
@@ -400,6 +427,18 @@ class _MappaPageState extends State<MappaPage> {
         ],
       ),
     );
+  }
+
+  Color _gpsColor(double accuracy) {
+    if (accuracy <= AppSettings.gpsAccuracyThreshold) {
+      return Colors.green;
+    }
+
+    if (accuracy <= AppSettings.gpsAccuracyThreshold * 1.5) {
+      return Colors.orange;
+    }
+
+    return Colors.red;
   }
 
   // ------------------------------------------------------------
