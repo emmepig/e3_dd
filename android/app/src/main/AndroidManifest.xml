@@ -7,7 +7,7 @@
 
 
     <application
-        android:label="e3_map"
+        android:label="e3_dd"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -1,6 +1,6 @@
 {
-    "name": "e3_map",
-    "short_name": "e3_map",
+    "name": "e3_dd",
+    "short_name": "e3_dd",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
