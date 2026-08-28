@@ -8,15 +8,15 @@ import '../utils/xml_send_web.dart';
 import '../services/app_settings.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key, required this.controller});
-
-  final PointLayerController controller;
+  const SettingsPage({super.key});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  late final PointLayerController pointLayerController = PointLayerController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,7 +75,7 @@ class _SettingsPageState extends State<SettingsPage> {
             leading: const Icon(Icons.sync),
             title: const Text('Sincronizza WEB'),
             onTap: () async {
-              final xml = widget.controller.exportLayerToXML();
+              final xml = pointLayerController.exportLayerToXML();
 
               final messaggioFinale = await inviaXmlAlServer(xml: xml);
 
@@ -90,7 +90,7 @@ class _SettingsPageState extends State<SettingsPage> {
             leading: const Icon(Icons.download),
             title: const Text('Download XML'),
             onTap: () async {
-              final xml = widget.controller.exportLayerToXML();
+              final xml = pointLayerController.exportLayerToXML();
 
               final timestamp = DateFormat(
                 'yyyyMMdd_HHmmss',
