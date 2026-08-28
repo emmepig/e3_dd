@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 // I TUOI FILE ESTERNI
 import 'pages/settings_page.dart';
+import 'pages/maps_page.dart';
 
 import 'services/auth_provider.dart';
 import 'services/app_settings.dart';
@@ -13,7 +14,12 @@ void main() async {
 
   final initialRoute = await AppSettings.getInitialRoute();
 
-  runApp(MyApp(initialRoute: initialRoute));
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: MyApp(initialRoute: initialRoute),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -26,7 +32,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       initialRoute: initialRoute,
       routes: {
-        //'/home': (context) => const HomePage(),
+        '/maps': (context) => const MappaPage(),
         //'/clienti': (context) => const ClientiPage(),
         //'/ordini': (context) => const OrdiniPage(),
         '/impostazioni': (context) => const SettingsPage(),

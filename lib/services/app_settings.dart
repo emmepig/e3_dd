@@ -30,7 +30,6 @@ class AppSettings {
   static Future<String> getInitialRoute() async {
     final prefs = await SharedPreferences.getInstance();
 
-    return prefs.getString(_lastRouteKey) ??
-        '/impostazioni'; // pagina di default
+    return prefs.getString(_lastRouteKey) ?? '/maps'; // pagina di default
   }
 }
