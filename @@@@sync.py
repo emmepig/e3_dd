@@ -10,8 +10,8 @@ def run_git():
 
     print("=== 1. Sincronizzazione in corso (PULL) ===")
     # Assicuriamoci che il ramo si chiami master
-    subprocess.run(["git", "branch", "-M", "master"])
-    subprocess.run(["git", "pull", "origin", "master"])
+    subprocess.run(["git", "branch", "-M", "main"])
+    subprocess.run(["git", "pull", "origin", "main"])
 
     print("\n=== 2. Analisi modifiche ===")
     subprocess.run(["git", "add", "."])
@@ -33,7 +33,7 @@ def run_git():
     else:
         print(result.stdout)
         print("\n=== 4. Invio al server (PUSH) ===")
-        subprocess.run(["git", "push", "origin", "master"])
+        subprocess.run(["git", "push", "origin", "main"])
 
     print("\n--- Operazione completata! ---")
     input("Premi Invio per chiudere...")
