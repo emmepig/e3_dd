@@ -13,10 +13,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final initialRoute = await AppSettings.getInitialRoute();
+  final authProvider = AuthProvider();
+  await authProvider.initialize();
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+      create: (_) => authProvider,
       child: MyApp(initialRoute: initialRoute),
     ),
   );
